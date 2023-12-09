@@ -7,15 +7,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
 use App\Models\User;
+use App\Models\Petugas;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use App\Mail\MailSend;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Laravel\Passport\HasApiTokens;
 
 class AuthController extends Controller
 {
+    use HasApiTokens;
     public function register(Request $request)
     {
         $registrationData = $request->all();
@@ -108,5 +111,57 @@ class AuthController extends Controller
         return response([
             'message' => 'Logged out'
         ]);
+    }
+
+    public function loginAdmin(Request $request)
+    {
+        $loginData = $request->all();
+
+        $validate = Validator::make($loginData, [
+            'email' => 'required|email:rfc,dns',
+            'password' => 'required',
+        ]);
+
+        if ($validate->fails()) {
+            return response(['message' => $validate->errors()], 400);
+        }
+
+        $petugas = \App\Models\Petugas::where('email', $loginData['email'])->first();
+
+        if (!$petugas || !password_verify($loginData['password'], $petugas->password)) {
+            return response(['message' => 'Invalid Petugas Credential'], 401);
+        }
+        $token = $petugas->createToken('Petugas Token')->accessToken;
+
+        return response([
+            'message' => 'Authenticated',
+            'petugas' => $petugas,
+            'token_type' => 'Bearer',
+            'access_token' => $token,
+        ]);
+    }
+
+    public function registerAdmin(Request $request)
+    {
+        $registrationData = $request->all();
+
+        $validate = validator::make($registrationData, [
+            'nama' => 'required|max:60',
+            'email' => 'required|email:rfc,dns|unique:petugas',
+            'no_telp' => 'required|regex:/^08[0-9]{9,11}$/',
+            'foto' => 'required|mimes:jpg,jpeg,png|max:2048',
+            'password' => 'required|min:8',
+            'alamat' => 'required|max:255',
+            'jabatan' => 'required'
+        ]);
+        if ($validate->fails()) {
+            return response(['message' => $validate->errors()], 400);
+        }
+        $registrationData['password'] = bcrypt($request->password);
+        $user = Petugas::create($registrationData);
+        return response([
+            'message' => 'Register Success',
+            'user' => $user
+        ], 200);
     }
 }
