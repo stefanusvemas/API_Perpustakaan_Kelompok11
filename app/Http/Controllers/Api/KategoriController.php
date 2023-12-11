@@ -3,37 +3,38 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Penerbit;
 use Illuminate\Http\Request;
+use App\Models\Kategori;
 use Illuminate\Support\Facades\Validator;
 
-class PenerbitController extends Controller
+class KategoriController extends Controller
 {
     public function index()
     {
-        $penerbit = Penerbit::all();
+        $kategori = Kategori::all();
 
         return response([
-            'message' => 'All Penerbit Retrieved',
-            'data' => $penerbit
+            'message' => 'All Kategori Retrieved',
+            'data' => $kategori
         ], 200);
     }
 
     public function store(Request $request)
     {
         $validate = Validator::make($request->all(), [
-            'nama' => 'required|unique:penerbit'
+            'nama' => 'required|unique:kategori',
+            'warna' => 'required'
         ]);
 
         if ($validate->fails()) {
             return response(['message' => $validate->errors()], 400);
         }
 
-        $penerbit = Penerbit::create($request->all());
+        $kategori = Kategori::create($request->all());
 
         return response([
-            'message' => 'Penerbit Added',
-            'data' => $penerbit
+            'message' => 'Kategori Added',
+            'data' => $kategori
         ], 200);
     }
 }
